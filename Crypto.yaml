@@ -1,0 +1,29 @@
+# 加密货币交易平台规则集
+# 更新日期: 2025-12-30
+
+payload:
+  # Binance 币安
+  - DOMAIN-SUFFIX,binance.com
+  - DOMAIN-SUFFIX,binance.cc
+  - DOMAIN-SUFFIX,bnbstatic.com
+  - DOMAIN-KEYWORD,binance
+  
+  # Bybit
+  - DOMAIN-SUFFIX,bybit.com
+  - DOMAIN-SUFFIX,bybit.cloud
+  - DOMAIN-KEYWORD,bybit
+  
+  # OKX (OKEx)
+  - DOMAIN-SUFFIX,okx.com
+  - DOMAIN-SUFFIX,okex.com
+  
+  # Huobi / HTX
+  - DOMAIN-SUFFIX,huobi.com
+  - DOMAIN-SUFFIX,hbfile.net
+  - DOMAIN-SUFFIX,htx.com
+  
+  # Coinbase
+  - DOMAIN-SUFFIX,coinbase.com
+  
+  # Kraken
+  - DOMAIN-SUFFIX,kraken.com
