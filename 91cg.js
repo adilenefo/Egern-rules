@@ -305,7 +305,7 @@ function extractAllCovers(html) {
     return coverMap;
 }
 
-// 解析视频列表
+// 解析视频列表 - 尝试提取文章内图片作为封面
 function parseVideoList(html) {
     const $ = Widget.html.load(html);
     const result = [];
@@ -329,9 +329,25 @@ function parseVideoList(html) {
                       linkEl.attr("title") ||
                       "未知标题";
         
-        // 封面图片服务器有防盗链，暂时不显示封面
-        // 如果 Forward 未来支持图片请求头，可以恢复封面功能
-        const coverUrl = "";
+        // 尝试从 meta 标签提取 og:image（如果存在）
+        let coverUrl = "";
+        
+        // 尝试从 script 中提取图片URL（不带防盗链的备用图）
+        const scriptText = $article.html() || "";
+        
+        // 方法1: 尝试提取 data-xkrkllgl 属性（这是实际图片URL）
+        const xkrkMatch = scriptText.match(/data-xkrkllgl="([^"]+)"/);
+        if (xkrkMatch && xkrkMatch[1]) {
+            coverUrl = xkrkMatch[1];
+        }
+        
+        // 方法2: 尝试从 loadImage 调用中提取
+        if (!coverUrl) {
+            const loadImgMatch = scriptText.match(/loadImage\s*\(\s*"([^"]+)"/);
+            if (loadImgMatch && loadImgMatch[1]) {
+                coverUrl = loadImgMatch[1];
+            }
+        }
         
         // 提取标签
         const tags = $article.find(".wraps").text().trim();
@@ -353,7 +369,37 @@ function parseVideoList(html) {
     return result;
 }
 
-// ==================== 主功能 ====================
+// 从详情页提取封面图片
+function extractCoverFromDetail(html) {
+    const $ = Widget.html.load(html);
+    
+    // 方法1: 从文章图片的 data-xkrkllgl 属性提取（实际图片URL）
+    const imgWithData = $('img[data-xkrkllgl]').first();
+    if (imgWithData.length) {
+        const coverUrl = imgWithData.attr('data-xkrkllgl');
+        if (coverUrl) return coverUrl;
+    }
+    
+    // 方法2: 从 og:image meta 标签提取
+    let coverUrl = $('meta[property="og:image"]').attr('content') || "";
+    if (coverUrl) return coverUrl;
+    
+    // 方法3: 从文章内容中提取第一张图片的 src
+    const contentImg = $(".post-content img, .entry-content img, article img").first();
+    if (contentImg.length) {
+        // 优先取 data-xkrkllgl，其次取 src
+        coverUrl = contentImg.attr('data-xkrkllgl') || contentImg.attr('src') || contentImg.attr('data-src') || "";
+        if (coverUrl && !coverUrl.startsWith('data:')) return coverUrl;
+    }
+    
+    // 方法4: 从视频播放器封面提取
+    const posterImg = $('video[poster]').attr('poster') || 
+                      $('[data-poster]').attr('data-poster') || "";
+    if (posterImg) return posterImg;
+    
+    return "";
+}
+
 async function getLatestVideos(params = {}) {
     const page = Math.max(1, Number(params.page) || 1);
     let url = page > 1 ? `${BASE_URL}/page/${page}/` : BASE_URL;
@@ -430,11 +476,15 @@ async function loadDetail(link) {
     const $ = Widget.html.load(response.data);
     const title = $("h1.post-title").text().trim() || $("title").text().trim() || "视频播放";
     
+    // 尝试提取封面图片
+    const coverUrl = extractCoverFromDetail(response.data);
+    
     return {
         id: videoId,
         type: "detail",
         mediaType: "movie",
         title: title,
+        coverUrl: coverUrl,
         videoUrl: videoUrl,
         customHeaders: { "Referer": fullUrl, "User-Agent": HEADERS["User-Agent"] },
         childItems: []
