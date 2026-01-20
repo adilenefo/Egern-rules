@@ -104,7 +104,8 @@ function extractAllCovers(html) {
     while ((match = regex.exec(html)) !== null) {
         const coverUrl = match[1];
         const postId = match[2];
-        if (coverUrl && postId && coverUrl.startsWith('http')) {
+        // 只接受 pic.hqcwcib.cn 域名的图片，过滤掉其他来源
+        if (coverUrl && postId && coverUrl.startsWith('http') && coverUrl.includes('pic.hqcwcib.cn')) {
             coverMap[postId] = coverUrl;
         }
     }
@@ -141,12 +142,13 @@ function parseVideoList(html) {
         // 提取封面 - 优先从coverMap获取
         let coverUrl = coverMap[videoId] || "";
         
-        // 如果coverMap没有，尝试从script标签提取
+        // 如果coverMap没有，尝试从script标签提取（只接受pic.hqcwcib.cn域名）
         if (!coverUrl) {
             const scriptText = $article.find("script").text() || "";
-            const bannerMatch = scriptText.match(/loadBannerDirect\s*\(\s*['"]([^'"]+)['"]/);
-            if (bannerMatch && bannerMatch[1] && bannerMatch[1].startsWith('http')) {
-                coverUrl = bannerMatch[1];
+            // 专门匹配 pic.hqcwcib.cn 域名的图片
+            const picMatch = scriptText.match(/https?:\/\/pic\.hqcwcib\.cn\/[^'")\s]+/);
+            if (picMatch && picMatch[0]) {
+                coverUrl = picMatch[0];
             }
         }
         
