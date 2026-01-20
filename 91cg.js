@@ -305,10 +305,22 @@ function extractAllCovers(html) {
     return coverMap;
 }
 
-// 解析视频列表 - 尝试提取文章内图片作为封面
+// 解析视频列表 - 尝试从脚本中提取封面
 function parseVideoList(html) {
     const $ = Widget.html.load(html);
     const result = [];
+    
+    // 先尝试从整个页面的script中提取封面映射
+    // 查找 loadBannerDirect 调用，格式: loadBannerDirect('图片URL', '密钥', document.querySelector('#post-card-ID'))
+    const coverMap = {};
+    const scriptRegex = /loadBannerDirect\s*\(\s*'([^']+)'\s*,\s*'[^']*'\s*,\s*document\.querySelector\s*\(\s*'#post-card-(\d+)'\s*\)/g;
+    let scriptMatch;
+    while ((scriptMatch = scriptRegex.exec(html)) !== null) {
+        if (scriptMatch[1] && scriptMatch[2]) {
+            coverMap[scriptMatch[2]] = scriptMatch[1];
+        }
+    }
+    console.log(`[parseVideoList] 从脚本中提取到 ${Object.keys(coverMap).length} 个封面映射`);
     
     $("article[itemscope]").each(function() {
         const $article = $(this);
@@ -329,23 +341,37 @@ function parseVideoList(html) {
                       linkEl.attr("title") ||
                       "未知标题";
         
-        // 尝试从 meta 标签提取 og:image（如果存在）
+        // 尝试多种方式获取封面
         let coverUrl = "";
         
-        // 尝试从 script 中提取图片URL（不带防盗链的备用图）
-        const scriptText = $article.html() || "";
-        
-        // 方法1: 尝试提取 data-xkrkllgl 属性（这是实际图片URL）
-        const xkrkMatch = scriptText.match(/data-xkrkllgl="([^"]+)"/);
-        if (xkrkMatch && xkrkMatch[1]) {
-            coverUrl = xkrkMatch[1];
+        // 方法1: 从预提取的封面映射中获取
+        if (coverMap[videoId]) {
+            coverUrl = coverMap[videoId];
         }
         
-        // 方法2: 尝试从 loadImage 调用中提取
+        // 方法2: 查找 article 内的 img 标签
         if (!coverUrl) {
-            const loadImgMatch = scriptText.match(/loadImage\s*\(\s*"([^"]+)"/);
-            if (loadImgMatch && loadImgMatch[1]) {
-                coverUrl = loadImgMatch[1];
+            const img = $article.find("img").first();
+            if (img.length) {
+                // 尝试各种属性
+                coverUrl = img.attr("data-xkrkllgl") || 
+                          img.attr("data-src") || 
+                          img.attr("data-lazy-src") ||
+                          img.attr("src") || "";
+                // 过滤掉 data: 开头的占位图
+                if (coverUrl.startsWith("data:")) coverUrl = "";
+            }
+        }
+        
+        // 方法3: 查找 post-card 背景图
+        if (!coverUrl) {
+            const postCard = $article.find(`#post-card-${videoId}, .post-card`).first();
+            if (postCard.length) {
+                const style = postCard.attr("style") || "";
+                const bgMatch = style.match(/background-image:\s*url\(['"]?([^'")\s]+)['"]?\)/i);
+                if (bgMatch && bgMatch[1]) {
+                    coverUrl = bgMatch[1];
+                }
             }
         }
         
