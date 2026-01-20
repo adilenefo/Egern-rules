@@ -153,7 +153,7 @@ function extractBackgroundImageUrl(style) {
 }
 
 // 从视频列表项中提取视频信息
-function extractVideoInfo($, element) {
+function extractVideoInfo($, element, coverMap = {}) {
     const $article = $(element);
     
     // 提取视频链接
@@ -172,17 +172,17 @@ function extractVideoInfo($, element) {
             const cardId = cardEl.attr("id") || "";
             const cardIdMatch = cardId.match(/post-card-(\d+)/);
             if (cardIdMatch) {
-                return extractVideoInfoById($, element, cardIdMatch[1]);
+                return extractVideoInfoById($, element, cardIdMatch[1], coverMap);
             }
         }
         return null;
     }
     
-    return extractVideoInfoById($, element, videoId);
+    return extractVideoInfoById($, element, videoId, coverMap);
 }
 
 // 根据ID提取视频信息
-function extractVideoInfoById($, element, videoId) {
+function extractVideoInfoById($, element, videoId, coverMap = {}) {
     const $article = $(element);
     
     // 构建链接
@@ -195,46 +195,43 @@ function extractVideoInfoById($, element, videoId) {
                   $article.find("a[href*='/archives/']").text().trim() ||
                   "未知标题";
     
-    // 提取封面图 - 从 loadBannerDirect 脚本中提取
+    // 提取封面图
     let coverUrl = "";
     
-    // 方法1: 从 script 标签中提取 loadBannerDirect 的第一个参数（封面URL）
-    // 匹配: loadBannerDirect('URL', '', document.querySelector('#post-card-101201'), ...)
-    const scriptContent = $article.find("script").text() || "";
-    const postCardId = `post-card-${videoId}`;
-    
-    // 正则匹配 loadBannerDirect('封面URL', ...)
-    const bannerMatch = scriptContent.match(/loadBannerDirect\s*\(\s*['"]([^'"]+)['"]/);
-    if (bannerMatch && bannerMatch[1]) {
-        coverUrl = bannerMatch[1];
-        console.log(`[extractVideoInfo] 从loadBannerDirect提取封面: ${coverUrl.substring(0, 50)}...`);
+    // 方法1: 从预先提取的coverMap中获取（最优先）
+    if (coverMap[videoId]) {
+        coverUrl = coverMap[videoId];
+        console.log(`[extractVideoInfoById] 从coverMap获取封面: ${videoId}`);
     }
     
-    // 方法2: 如果方法1失败，尝试匹配包含该post-card-id的loadBannerDirect
+    // 方法2: 从 script 标签中提取 loadBannerDirect 的第一个参数
     if (!coverUrl) {
-        const specificBannerMatch = scriptContent.match(new RegExp(`loadBannerDirect\\s*\\(\\s*['"]([^'"]+)['"][^)]*#${postCardId}`));
-        if (specificBannerMatch && specificBannerMatch[1]) {
-            coverUrl = specificBannerMatch[1];
+        const scriptContent = $article.find("script").text() || "";
+        const bannerMatch = scriptContent.match(/loadBannerDirect\s*\(\s*['"]([^'"]+)['"]/);
+        if (bannerMatch && bannerMatch[1]) {
+            coverUrl = bannerMatch[1];
         }
     }
     
-    // 方法3: 从 pic.hqcwcib.cn 域名提取图片URL
+    // 方法3: 从 pic 域名提取图片URL
     if (!coverUrl) {
-        const picMatch = scriptContent.match(/https?:\/\/pic\.hqcwcib\.cn\/[^'")\s]+/);
+        const scriptContent = $article.find("script").text() || "";
+        const picMatch = scriptContent.match(/https?:\/\/pic\.[^'")\s]+\.(?:jpg|jpeg|png|webp|gif)/i);
         if (picMatch && picMatch[0]) {
             coverUrl = picMatch[0];
         }
     }
     
-    // 方法4: 从任意图片域名提取
+    // 方法4: 从任意https图片URL提取
     if (!coverUrl) {
+        const scriptContent = $article.find("script").text() || "";
         const imgMatch = scriptContent.match(/https?:\/\/[^'")\s]+\.(?:jpg|jpeg|png|webp|gif)/i);
         if (imgMatch && imgMatch[0]) {
             coverUrl = imgMatch[0];
         }
     }
     
-    // 方法5: 从 .post-card 的 style 属性获取 background-image（备用）
+    // 方法5: 从 .post-card 的 style 属性获取 background-image
     if (!coverUrl) {
         const postCard = $article.find(".post-card").first();
         if (postCard.length) {
@@ -245,7 +242,7 @@ function extractVideoInfoById($, element, videoId) {
         }
     }
     
-    // 方法6: 从 img 标签获取（备用）
+    // 方法6: 从 img 标签获取
     if (!coverUrl) {
         const img = $article.find("img").first();
         if (img.length) {
@@ -282,7 +279,7 @@ function extractVideoInfoById($, element, videoId) {
     if (author) description += `作者：${author}`;
     if (tags) description += (description ? " | " : "") + tags;
     
-    console.log(`[extractVideoInfo] ID: ${videoId}, 封面: ${coverUrl ? coverUrl.substring(0, 60) + '...' : '无'}`);
+    console.log(`[extractVideoInfoById] ID: ${videoId}, 封面: ${coverUrl ? coverUrl.substring(0, 60) + '...' : '无'}`);
     
     return {
         id: videoId,
@@ -319,11 +316,17 @@ async function getLatestVideos(params = {}) {
         }
         
         const $ = Widget.html.load(response.data);
+        const html = response.data;
+        
+        // 从整个页面提取所有封面URL映射
+        const coverMap = extractAllCoversFromPage(html);
+        console.log(`[getLatestVideos] 从页面提取到 ${Object.keys(coverMap).length} 个封面映射`);
+        
         const result = [];
         
         // 视频列表选择器 - 基于Typecho Mirages主题结构
         $("article[itemscope]").each(function () {
-            const videoInfo = extractVideoInfo($, this);
+            const videoInfo = extractVideoInfo($, this, coverMap);
             if (videoInfo) {
                 result.push(videoInfo);
             }
@@ -358,11 +361,295 @@ async function getCategoryVideos(params = {}) {
         }
         
         const $ = Widget.html.load(response.data);
+        const html = response.data;
+        
+        // 从整个页面提取所有封面URL映射
+        const coverMap = extractAllCoversFromPage(html);
+        console.log(`[getCategoryVideos] 从页面提取到 ${Object.keys(coverMap).length} 个封面映射`);
+        
         const result = [];
         
         // 视频列表选择器
         $("article[itemscope]").each(function () {
-            const videoInfo = extractVideoInfo($, this);
+            const videoInfo = extractVideoInfo($, this, coverMap);
+            if (videoInfo) {
+                result.push(videoInfo);
+            }
+        });
+        
+        console.log(`[getCategoryVideos] 解析到 ${result.length} 个视频`);
+        return result;
+        
+    } catch (error) {
+        console.error("[getCategoryVideos] 错误:", error.message);
+        throw error;
+    }
+}
+
+// 从整个页面HTML中提取所有loadBannerDirect调用的封面URL
+function extractAllCoversFromPage(html) {
+    const coverMap = {};
+    
+    // 匹配所有 loadBannerDirect('封面URL', '', document.querySelector('#post-card-xxxxx'), ...) 调用
+    const regex = /loadBannerDirect\s*\(\s*['"]([^'"]+)['"]\s*,\s*['"][^'"]*['"]\s*,\s*document\.querySelector\s*\(\s*['"]#post-card-(\d+)['"]\s*\)/g;
+    
+    let match;
+    while ((match = regex.exec(html)) !== null) {
+        const coverUrl = match[1];
+        const postId = match[2];
+        if (coverUrl && postId) {
+            coverMap[postId] = coverUrl;
+            console.log(`[extractAllCoversFromPage] 找到封面: post-card-${postId} -> ${coverUrl.substring(0, 50)}...`);
+        }
+    }
+    
+    // 备用方法：匹配简单格式
+    if (Object.keys(coverMap).length === 0) {
+        const simpleRegex = /loadBannerDirect\s*\(\s*['"]([^'"]+)['"]/g;
+        const idRegex = /#post-card-(\d+)/g;
+        
+        // 提取所有封面URL
+        const urls = [];
+        while ((match = simpleRegex.exec(html)) !== null) {
+            if (match[1] && match[1].startsWith('http')) {
+                urls.push(match[1]);
+            }
+        }
+        
+        // 提取所有post-card ID
+        const ids = [];
+        while ((match = idRegex.exec(html)) !== null) {
+            if (match[1] && !ids.includes(match[1])) {
+                ids.push(match[1]);
+            }
+        }
+        
+        console.log(`[extractAllCoversFromPage] 备用方法: 找到 ${urls.length} 个URL, ${ids.length} 个ID`);
+    }
+    
+    return coverMap;
+}
+
+// 从视频列表项中提取视频信息
+function extractVideoInfo($, element, coverMap = {}) {
+    const $article = $(element);
+    
+    // 提取视频链接
+    const linkEl = $article.find("a[href*='/archives/']").first();
+    let link = linkEl.attr("href") || "";
+    link = ensureAbsoluteUrl(link);
+    
+    // 从链接中提取视频ID
+    const idMatch = link.match(/\/archives\/(\d+)/);
+    const videoId = idMatch ? idMatch[1] : "";
+    
+    if (!videoId) {
+        // 尝试从post-card的id属性获取
+        const cardEl = $article.find(".post-card[id^='post-card-']");
+        if (cardEl.length) {
+            const cardId = cardEl.attr("id") || "";
+            const cardIdMatch = cardId.match(/post-card-(\d+)/);
+            if (cardIdMatch) {
+                return extractVideoInfoById($, element, cardIdMatch[1], coverMap);
+            }
+        }
+        return null;
+    }
+    
+    return extractVideoInfoById($, element, videoId, coverMap);
+}
+
+// 根据ID提取视频信息
+function extractVideoInfoById($, element, videoId, coverMap = {}) {
+    const $article = $(element);
+    
+    // 构建链接
+    const link = ensureAbsoluteUrl(`/archives/${videoId}/`);
+    
+    // 提取标题
+    const title = $article.find("h2").text().trim() ||
+                  $article.find(".post-card-info h2").text().trim() ||
+                  $article.find("a[href*='/archives/']").attr("title") ||
+                  $article.find("a[href*='/archives/']").text().trim() ||
+                  "未知标题";
+    
+    // 提取封面图
+    let coverUrl = "";
+    
+    // 方法1: 从预先提取的coverMap中获取（最优先）
+    if (coverMap[videoId]) {
+        coverUrl = coverMap[videoId];
+        console.log(`[extractVideoInfoById] 从coverMap获取封面: ${videoId}`);
+    }
+    
+    // 方法2: 从 script 标签中提取 loadBannerDirect 的第一个参数
+    if (!coverUrl) {
+        const scriptContent = $article.find("script").text() || "";
+        const bannerMatch = scriptContent.match(/loadBannerDirect\s*\(\s*['"]([^'"]+)['"]/);
+        if (bannerMatch && bannerMatch[1]) {
+            coverUrl = bannerMatch[1];
+        }
+    }
+    
+    // 方法3: 从 pic 域名提取图片URL
+    if (!coverUrl) {
+        const scriptContent = $article.find("script").text() || "";
+        const picMatch = scriptContent.match(/https?:\/\/pic\.[^'")\s]+\.(?:jpg|jpeg|png|webp|gif)/i);
+        if (picMatch && picMatch[0]) {
+            coverUrl = picMatch[0];
+        }
+    }
+    
+    // 方法4: 从任意https图片URL提取
+    if (!coverUrl) {
+        const scriptContent = $article.find("script").text() || "";
+        const imgMatch = scriptContent.match(/https?:\/\/[^'")\s]+\.(?:jpg|jpeg|png|webp|gif)/i);
+        if (imgMatch && imgMatch[0]) {
+            coverUrl = imgMatch[0];
+        }
+    }
+    
+    // 方法5: 从 .post-card 的 style 属性获取 background-image
+    if (!coverUrl) {
+        const postCard = $article.find(".post-card").first();
+        if (postCard.length) {
+            const style = postCard.attr("style") || "";
+            if (style) {
+                coverUrl = extractBackgroundImageUrl(style);
+            }
+        }
+    }
+    
+    // 方法6: 从 img 标签获取
+    if (!coverUrl) {
+        const img = $article.find("img").first();
+        if (img.length) {
+            coverUrl = ensureAbsoluteUrl(
+                img.attr("data-src") || 
+                img.attr("data-original") || 
+                img.attr("src") || 
+                ""
+            );
+        }
+    }
+    
+    // 确保URL是完整的
+    if (coverUrl && !coverUrl.startsWith("http") && !coverUrl.startsWith("data:")) {
+        coverUrl = ensureAbsoluteUrl(coverUrl);
+    }
+    
+    // 提取作者
+    let author = "";
+    const authorMeta = $article.find("meta[itemprop='name']").first();
+    if (authorMeta.length) {
+        author = authorMeta.attr("content") || "";
+    }
+    
+    // 提取标签
+    let tags = "";
+    const tagEl = $article.find(".wraps, .tag, .category");
+    if (tagEl.length) {
+        tags = tagEl.text().trim();
+    }
+    
+    // 构建描述
+    let description = "";
+    if (author) description += `作者：${author}`;
+    if (tags) description += (description ? " | " : "") + tags;
+    
+    console.log(`[extractVideoInfoById] ID: ${videoId}, 封面: ${coverUrl ? coverUrl.substring(0, 60) + '...' : '无'}`);
+    
+    return {
+        id: videoId,
+        type: "link",
+        mediaType: "movie",
+        title: title,
+        coverUrl: coverUrl,
+        previewUrl: "",
+        duration: 0,
+        durationText: "",
+        link: link,
+        description: description
+    };
+}
+
+// ==================== 主功能函数 ====================
+
+// 获取最新视频
+async function getLatestVideos(params = {}) {
+    const page = Math.max(1, Number(params.page) || 1);
+    
+    let url = BASE_URL;
+    if (page > 1) {
+        url = `${BASE_URL}/page/${page}/`;
+    }
+    
+    console.log(`[getLatestVideos] 请求URL: ${url}`);
+    
+    try {
+        const response = await Widget.http.get(url, { headers: HEADERS });
+        
+        if (!response || !response.data) {
+            throw new Error("页面加载失败");
+        }
+        
+        const $ = Widget.html.load(response.data);
+        const html = response.data;
+        
+        // 从整个页面提取所有封面URL映射
+        const coverMap = extractAllCoversFromPage(html);
+        console.log(`[getLatestVideos] 从页面提取到 ${Object.keys(coverMap).length} 个封面映射`);
+        
+        const result = [];
+        
+        // 视频列表选择器 - 基于Typecho Mirages主题结构
+        $("article[itemscope]").each(function () {
+            const videoInfo = extractVideoInfo($, this, coverMap);
+            if (videoInfo) {
+                result.push(videoInfo);
+            }
+        });
+        
+        console.log(`[getLatestVideos] 解析到 ${result.length} 个视频`);
+        return result;
+        
+    } catch (error) {
+        console.error("[getLatestVideos] 错误:", error.message);
+        throw error;
+    }
+}
+
+// 获取分类视频
+async function getCategoryVideos(params = {}) {
+    const category = params.category || "zxcghl";
+    const page = Math.max(1, Number(params.page) || 1);
+    
+    let url = `${BASE_URL}/category/${category}/`;
+    if (page > 1) {
+        url = `${BASE_URL}/category/${category}/page/${page}/`;
+    }
+    
+    console.log(`[getCategoryVideos] 请求URL: ${url}`);
+    
+    try {
+        const response = await Widget.http.get(url, { headers: HEADERS });
+        
+        if (!response || !response.data) {
+            throw new Error("页面加载失败");
+        }
+        
+        const $ = Widget.html.load(response.data);
+        const html = response.data;
+        
+        // 从整个页面提取所有封面URL映射
+        const coverMap = extractAllCoversFromPage(html);
+        console.log(`[getCategoryVideos] 从页面提取到 ${Object.keys(coverMap).length} 个封面映射`);
+        
+        const result = [];
+        
+        // 视频列表选择器
+        $("article[itemscope]").each(function () {
+            const videoInfo = extractVideoInfo($, this, coverMap);
             if (videoInfo) {
                 result.push(videoInfo);
             }
