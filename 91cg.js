@@ -97,64 +97,45 @@ function ensureAbsoluteUrl(url) {
 function extractAllCovers(html) {
     const coverMap = {};
     
-    // 方法1: 精确匹配 loadBannerDirect 调用
-    // 格式: loadBannerDirect('图片URL', '', document.querySelector('#post-card-数字'), ...)
-    // 使用 [\s\S] 来匹配包括换行在内的任意字符
-    const regex1 = /loadBannerDirect\s*\(\s*'(https?:\/\/[^']+)'[\s\S]*?#post-card-(\d+)/g;
+    // 先找到所有封面URL（pic.hqcwcib.cn 域名）
+    const urlMatches = html.match(/loadBannerDirect\s*\(\s*'(https?:\/\/pic\.[^']+)'/g) || [];
+    const urls = urlMatches.map(m => {
+        const match = m.match(/'(https?:\/\/pic\.[^']+)'/);
+        return match ? match[1] : null;
+    }).filter(Boolean);
     
+    // 找到所有 post-card ID（按顺序）
+    const idMatches = html.match(/#post-card-(\d+)/g) || [];
+    const ids = [];
+    const seenIds = {};
+    for (const m of idMatches) {
+        const match = m.match(/#post-card-(\d+)/);
+        if (match && !seenIds[match[1]]) {
+            ids.push(match[1]);
+            seenIds[match[1]] = true;
+        }
+    }
+    
+    console.log(`[extractAllCovers] 找到 ${urls.length} 个封面URL, ${ids.length} 个post-card ID`);
+    
+    // 方法1: 尝试精确匹配每个调用
+    const callRegex = /loadBannerDirect\s*\(\s*'([^']+)'\s*,\s*'[^']*'\s*,\s*document\.querySelector\s*\(\s*'#post-card-(\d+)'\s*\)/g;
     let match;
-    while ((match = regex1.exec(html)) !== null) {
-        const coverUrl = match[1];
-        const postId = match[2];
-        if (coverUrl && postId && coverUrl.includes('pic.')) {
-            coverMap[postId] = coverUrl;
+    while ((match = callRegex.exec(html)) !== null) {
+        if (match[1] && match[2] && match[1].includes('pic.')) {
+            coverMap[match[2]] = match[1];
         }
     }
     
-    // 方法2: 如果方法1没找到，尝试分段匹配
-    if (Object.keys(coverMap).length === 0) {
-        console.log("[extractAllCovers] 方法1未匹配，尝试方法2");
-        
-        // 匹配所有 loadBannerDirect 调用块
-        const blockRegex = /loadBannerDirect\s*\([^;]+;/g;
-        let blockMatch;
-        
-        while ((blockMatch = blockRegex.exec(html)) !== null) {
-            const block = blockMatch[0];
-            
-            // 从块中提取URL
-            const urlMatch = block.match(/'(https?:\/\/pic\.[^']+)'/);
-            // 从块中提取ID
-            const idMatch = block.match(/#post-card-(\d+)/);
-            
-            if (urlMatch && idMatch) {
-                coverMap[idMatch[1]] = urlMatch[1];
-            }
+    // 方法2: 如果方法1没结果，按顺序配对
+    if (Object.keys(coverMap).length === 0 && urls.length > 0 && ids.length > 0) {
+        console.log("[extractAllCovers] 使用顺序配对方法");
+        for (let i = 0; i < Math.min(urls.length, ids.length); i++) {
+            coverMap[ids[i]] = urls[i];
         }
     }
     
-    // 方法3: 最宽松的匹配 - 直接找所有pic域名图片和post-card ID的配对
-    if (Object.keys(coverMap).length === 0) {
-        console.log("[extractAllCovers] 方法2未匹配，尝试方法3");
-        
-        // 找所有包含 loadBannerDirect 和 pic. 的行
-        const lines = html.split('\n');
-        for (const line of lines) {
-            if (line.includes('loadBannerDirect') && line.includes('pic.')) {
-                const urlMatch = line.match(/'(https?:\/\/pic\.[^']+)'/);
-                const idMatch = line.match(/#post-card-(\d+)/);
-                if (urlMatch && idMatch) {
-                    coverMap[idMatch[1]] = urlMatch[1];
-                }
-            }
-        }
-    }
-    
-    console.log(`[extractAllCovers] 总共提取到 ${Object.keys(coverMap).length} 个封面`);
-    
-    // 输出前3个作为示例
-    const keys = Object.keys(coverMap).slice(0, 3);
-    keys.forEach(k => console.log(`  示例: ID=${k}, URL=${coverMap[k].substring(0, 50)}...`));
+    console.log(`[extractAllCovers] 最终提取到 ${Object.keys(coverMap).length} 个封面`);
     
     return coverMap;
 }
@@ -184,24 +165,27 @@ function parseVideoList(html) {
                       linkEl.attr("title") ||
                       "未知标题";
         
-        // 提取封面 - 从coverMap获取
+        // 提取封面
         let coverUrl = coverMap[videoId] || "";
         
-        // 如果coverMap没有，尝试直接从整个HTML中搜索该ID对应的封面
+        // 如果coverMap没有，尝试直接匹配
         if (!coverUrl) {
-            // 使用更精确的正则匹配该视频ID的封面
-            const specificRegex = new RegExp(`loadBannerDirect\\s*\\(\\s*'(https?://[^']+)'[^)]*#post-card-${videoId}`, 'i');
+            const specificRegex = new RegExp(`loadBannerDirect\\s*\\(\\s*'(https?://pic[^']+)'[^)]*#post-card-${videoId}`, 'i');
             const specificMatch = html.match(specificRegex);
             if (specificMatch && specificMatch[1]) {
                 coverUrl = specificMatch[1];
-                console.log(`[parseVideoList] 单独匹配到封面: ID=${videoId}`);
             }
+        }
+        
+        // 由于图片服务器有防盗链，尝试添加 Referer 参数
+        // 注意：这可能不起作用，取决于 Forward 播放器是否支持图片请求头
+        if (coverUrl) {
+            // 保持原URL，Forward 可能有内置的图片代理功能
+            console.log(`[parseVideoList] ID=${videoId}, 封面URL: ${coverUrl.substring(0, 60)}...`);
         }
         
         // 提取标签
         const tags = $article.find(".wraps").text().trim();
-        
-        console.log(`[parseVideoList] 视频: ID=${videoId}, 封面=${coverUrl ? '有' : '无'}`);
         
         result.push({
             id: videoId,
@@ -209,6 +193,11 @@ function parseVideoList(html) {
             mediaType: "movie",
             title: title,
             coverUrl: coverUrl,
+            // 添加封面请求头（如果 Forward 支持）
+            coverHeaders: {
+                "Referer": BASE_URL + "/",
+                "User-Agent": HEADERS["User-Agent"]
+            },
             previewUrl: "",
             duration: 0,
             durationText: "",
