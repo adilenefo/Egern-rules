@@ -195,28 +195,97 @@ function extractVideoInfoById($, element, videoId) {
                   $article.find("a[href*='/archives/']").text().trim() ||
                   "未知标题";
     
-    // 提取封面图
+    // 提取封面图 - 改进逻辑
     let coverUrl = "";
     
-    // 方法1: 从post-card的background-image获取
+    // 方法1: 从 .post-card 的 style 属性获取 background-image
     const postCard = $article.find(".post-card").first();
     if (postCard.length) {
-        const blogBg = postCard.find(".blog-background");
-        if (blogBg.length) {
-            const style = blogBg.attr("style") || "";
+        const style = postCard.attr("style") || "";
+        if (style) {
             coverUrl = extractBackgroundImageUrl(style);
         }
     }
     
-    // 方法2: 从img标签获取
+    // 方法2: 从 .blog-background 的 style 属性获取
+    if (!coverUrl) {
+        const blogBg = $article.find(".blog-background").first();
+        if (blogBg.length) {
+            const style = blogBg.attr("style") || "";
+            if (style) {
+                coverUrl = extractBackgroundImageUrl(style);
+            }
+        }
+    }
+    
+    // 方法3: 从任意带有 background-image 的元素获取
+    if (!coverUrl) {
+        $article.find("[style*='background']").each(function() {
+            if (!coverUrl) {
+                const style = $(this).attr("style") || "";
+                const url = extractBackgroundImageUrl(style);
+                if (url && !url.startsWith("data:")) {
+                    coverUrl = url;
+                }
+            }
+        });
+    }
+    
+    // 方法4: 从 data-src 或 data-original 属性获取（懒加载图片）
+    if (!coverUrl) {
+        const lazyImg = $article.find("[data-src], [data-original]").first();
+        if (lazyImg.length) {
+            coverUrl = ensureAbsoluteUrl(
+                lazyImg.attr("data-src") || 
+                lazyImg.attr("data-original") || 
+                ""
+            );
+        }
+    }
+    
+    // 方法5: 从 img 标签获取
     if (!coverUrl) {
         const img = $article.find("img").first();
-        coverUrl = ensureAbsoluteUrl(
-            img.attr("data-src") || 
-            img.attr("data-original") || 
-            img.attr("src") || 
-            ""
-        );
+        if (img.length) {
+            coverUrl = ensureAbsoluteUrl(
+                img.attr("data-src") || 
+                img.attr("data-original") || 
+                img.attr("data-lazy-src") ||
+                img.attr("src") || 
+                ""
+            );
+        }
+    }
+    
+    // 方法6: 从文章内容中查找第一张图片
+    if (!coverUrl) {
+        const contentImg = $article.find(".post-content img, .content img, .entry img").first();
+        if (contentImg.length) {
+            coverUrl = ensureAbsoluteUrl(
+                contentImg.attr("data-src") || 
+                contentImg.attr("src") || 
+                ""
+            );
+        }
+    }
+    
+    // 过滤掉无效的封面（base64占位图或空图）
+    if (coverUrl && (coverUrl.length < 50 || coverUrl.includes("data:image/gif") || coverUrl.includes("placeholder"))) {
+        // 可能是占位图，尝试其他方法
+        const allStyles = [];
+        $article.find("*").each(function() {
+            const s = $(this).attr("style");
+            if (s && s.includes("url(")) {
+                allStyles.push(s);
+            }
+        });
+        for (const s of allStyles) {
+            const url = extractBackgroundImageUrl(s);
+            if (url && url.startsWith("http") && !url.includes("placeholder")) {
+                coverUrl = url;
+                break;
+            }
+        }
     }
     
     // 提取作者
@@ -237,6 +306,8 @@ function extractVideoInfoById($, element, videoId) {
     let description = "";
     if (author) description += `作者：${author}`;
     if (tags) description += (description ? " | " : "") + tags;
+    
+    console.log(`[extractVideoInfo] ID: ${videoId}, 封面: ${coverUrl ? coverUrl.substring(0, 50) + '...' : '无'}`);
     
     return {
         id: videoId,
