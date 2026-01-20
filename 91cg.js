@@ -1,7 +1,7 @@
 WidgetMetadata = {
     id: "91CG",
     title: "91瓜叔",
-    version: "1.0.1",
+    version: "1.0.3",
     requiredVersion: "0.0.1",
     description: "91瓜叔 - 在线吃瓜",
     author: "Forward",
@@ -48,6 +48,156 @@ WidgetMetadata = {
             ]
         },
         {
+            id: "teacher",
+            title: "👩‍🏫 师生专栏",
+            functionName: "getCategoryVideos",
+            cacheDuration: 600,
+            params: [
+                { name: "category", title: "分类", type: "constant", value: "xsjlb" },
+                { name: "page", title: "页码", type: "page", value: "1" }
+            ]
+        },
+        {
+            id: "nightVideos",
+            title: "🌙 深夜撸片",
+            functionName: "getCategoryVideos",
+            cacheDuration: 600,
+            params: [
+                { name: "category", title: "分类", type: "constant", value: "lpsd" },
+                { name: "page", title: "页码", type: "page", value: "1" }
+            ]
+        },
+        {
+            id: "haijiao",
+            title: "🔞 海角乱伦",
+            functionName: "getCategoryVideos",
+            cacheDuration: 600,
+            params: [
+                { name: "category", title: "分类", type: "constant", value: "hjll" },
+                { name: "page", title: "页码", type: "page", value: "1" }
+            ]
+        },
+        {
+            id: "dailyContest",
+            title: "🏆 每日大赛",
+            functionName: "getCategoryVideos",
+            cacheDuration: 600,
+            params: [
+                { name: "category", title: "分类", type: "constant", value: "mrds" },
+                { name: "page", title: "页码", type: "page", value: "1" }
+            ]
+        },
+        {
+            id: "wanghong",
+            title: "💋 网红黑料",
+            functionName: "getCategoryVideos",
+            cacheDuration: 600,
+            params: [
+                { name: "category", title: "分类", type: "constant", value: "whhl" },
+                { name: "page", title: "页码", type: "page", value: "1" }
+            ]
+        },
+        {
+            id: "anime",
+            title: "🎌 成人动漫",
+            functionName: "getCategoryVideos",
+            cacheDuration: 600,
+            params: [
+                { name: "category", title: "分类", type: "constant", value: "crdm" },
+                { name: "page", title: "页码", type: "page", value: "1" }
+            ]
+        },
+        {
+            id: "starScandal",
+            title: "🌟 明星黑料",
+            functionName: "getCategoryVideos",
+            cacheDuration: 600,
+            params: [
+                { name: "category", title: "分类", type: "constant", value: "mxhl" },
+                { name: "page", title: "页码", type: "page", value: "1" }
+            ]
+        },
+        {
+            id: "selfie",
+            title: "📷 自拍偷拍",
+            functionName: "getCategoryVideos",
+            cacheDuration: 600,
+            params: [
+                { name: "category", title: "分类", type: "constant", value: "zptp" },
+                { name: "page", title: "页码", type: "page", value: "1" }
+            ]
+        },
+        {
+            id: "tanhua",
+            title: "🌸 91探花",
+            functionName: "getCategoryVideos",
+            cacheDuration: 600,
+            params: [
+                { name: "category", title: "分类", type: "constant", value: "91th" },
+                { name: "page", title: "页码", type: "page", value: "1" }
+            ]
+        },
+        {
+            id: "extreme",
+            title: "⚠️ 猎奇重口",
+            functionName: "getCategoryVideos",
+            cacheDuration: 600,
+            params: [
+                { name: "category", title: "分类", type: "constant", value: "lqzk" },
+                { name: "page", title: "页码", type: "page", value: "1" }
+            ]
+        },
+        {
+            id: "starAI",
+            title: "🤖 明星AI",
+            functionName: "getCategoryVideos",
+            cacheDuration: 600,
+            params: [
+                { name: "category", title: "分类", type: "constant", value: "aikj" },
+                { name: "page", title: "页码", type: "page", value: "1" }
+            ]
+        },
+        {
+            id: "socialNews",
+            title: "📰 社会奇闻",
+            functionName: "getCategoryVideos",
+            cacheDuration: 600,
+            params: [
+                { name: "category", title: "分类", type: "constant", value: "qwys" },
+                { name: "page", title: "页码", type: "page", value: "1" }
+            ]
+        },
+        {
+            id: "contrast",
+            title: "💃 反差靓女",
+            functionName: "getCategoryVideos",
+            cacheDuration: 600,
+            params: [
+                { name: "category", title: "分类", type: "constant", value: "fclv" },
+                { name: "page", title: "页码", type: "page", value: "1" }
+            ]
+        },
+        {
+            id: "shortDrama",
+            title: "🎬 擦边短剧",
+            functionName: "getCategoryVideos",
+            cacheDuration: 600,
+            params: [
+                { name: "category", title: "分类", type: "constant", value: "dydj" },
+                { name: "page", title: "页码", type: "page", value: "1" }
+            ]
+        },
+        {
+            id: "wanghuang",
+            title: "🎀 网黄合集",
+            functionName: "getCategoryVideos",
+            cacheDuration: 600,
+            params: [
+                { name: "category", title: "分类", type: "constant", value: "gcwh" },
+                { name: "page", title: "页码", type: "page", value: "1" }
+            ]
+        },
+        {
             id: "categoryBrowse",
             title: "📂 分类浏览",
             functionName: "getCategoryVideos",
@@ -61,7 +211,22 @@ WidgetMetadata = {
                     enumOptions: [
                         { title: "今日吃瓜", value: "zxcghl" },
                         { title: "最高点击", value: "rsdg" },
-                        { title: "必吃大瓜", value: "bcdg" }
+                        { title: "必吃大瓜", value: "bcdg" },
+                        { title: "师生专栏", value: "xsjlb" },
+                        { title: "深夜撸片", value: "lpsd" },
+                        { title: "海角乱伦", value: "hjll" },
+                        { title: "每日大赛", value: "mrds" },
+                        { title: "网红黑料", value: "whhl" },
+                        { title: "成人动漫", value: "crdm" },
+                        { title: "明星黑料", value: "mxhl" },
+                        { title: "自拍偷拍", value: "zptp" },
+                        { title: "91探花", value: "91th" },
+                        { title: "猎奇重口", value: "lqzk" },
+                        { title: "明星AI", value: "aikj" },
+                        { title: "社会奇闻", value: "qwys" },
+                        { title: "反差靓女", value: "fclv" },
+                        { title: "擦边短剧", value: "dydj" },
+                        { title: "网黄合集", value: "gcwh" }
                     ]
                 },
                 { name: "page", title: "页码", type: "page", value: "1" }
@@ -143,7 +308,6 @@ function extractAllCovers(html) {
 // 解析视频列表
 function parseVideoList(html) {
     const $ = Widget.html.load(html);
-    const coverMap = extractAllCovers(html);
     const result = [];
     
     $("article[itemscope]").each(function() {
@@ -165,24 +329,9 @@ function parseVideoList(html) {
                       linkEl.attr("title") ||
                       "未知标题";
         
-        // 提取封面
-        let coverUrl = coverMap[videoId] || "";
-        
-        // 如果coverMap没有，尝试直接匹配
-        if (!coverUrl) {
-            const specificRegex = new RegExp(`loadBannerDirect\\s*\\(\\s*'(https?://pic[^']+)'[^)]*#post-card-${videoId}`, 'i');
-            const specificMatch = html.match(specificRegex);
-            if (specificMatch && specificMatch[1]) {
-                coverUrl = specificMatch[1];
-            }
-        }
-        
-        // 由于图片服务器有防盗链，尝试添加 Referer 参数
-        // 注意：这可能不起作用，取决于 Forward 播放器是否支持图片请求头
-        if (coverUrl) {
-            // 保持原URL，Forward 可能有内置的图片代理功能
-            console.log(`[parseVideoList] ID=${videoId}, 封面URL: ${coverUrl.substring(0, 60)}...`);
-        }
+        // 封面图片服务器有防盗链，暂时不显示封面
+        // 如果 Forward 未来支持图片请求头，可以恢复封面功能
+        const coverUrl = "";
         
         // 提取标签
         const tags = $article.find(".wraps").text().trim();
@@ -193,11 +342,6 @@ function parseVideoList(html) {
             mediaType: "movie",
             title: title,
             coverUrl: coverUrl,
-            // 添加封面请求头（如果 Forward 支持）
-            coverHeaders: {
-                "Referer": BASE_URL + "/",
-                "User-Agent": HEADERS["User-Agent"]
-            },
             previewUrl: "",
             duration: 0,
             durationText: "",
