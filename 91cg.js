@@ -97,51 +97,65 @@ function ensureAbsoluteUrl(url) {
 function extractAllCovers(html) {
     const coverMap = {};
     
-    // 匹配格式: loadBannerDirect('https://pic.hqcwcib.cn/...jpeg', '', document.querySelector('#post-card-数字')
-    // 简化正则：直接匹配 loadBannerDirect 后面的图片URL和对应的 post-card ID
-    const regex = /loadBannerDirect\s*\(\s*'(https:\/\/pic\.hqcwcib\.cn\/[^']+)'[^)]*#post-card-(\d+)/g;
+    // 方法1: 精确匹配 loadBannerDirect 调用
+    // 格式: loadBannerDirect('图片URL', '', document.querySelector('#post-card-数字'), ...)
+    // 使用 [\s\S] 来匹配包括换行在内的任意字符
+    const regex1 = /loadBannerDirect\s*\(\s*'(https?:\/\/[^']+)'[\s\S]*?#post-card-(\d+)/g;
     
     let match;
-    while ((match = regex.exec(html)) !== null) {
+    while ((match = regex1.exec(html)) !== null) {
         const coverUrl = match[1];
         const postId = match[2];
-        if (coverUrl && postId) {
+        if (coverUrl && postId && coverUrl.includes('pic.')) {
             coverMap[postId] = coverUrl;
-            console.log(`[extractAllCovers] 找到封面: ID=${postId}, URL=${coverUrl.substring(0, 60)}...`);
         }
     }
     
-    // 如果上面的方法没找到，尝试更宽松的匹配
+    // 方法2: 如果方法1没找到，尝试分段匹配
     if (Object.keys(coverMap).length === 0) {
-        console.log("[extractAllCovers] 第一种方法未匹配，尝试备用方法");
-        // 备用：分别提取URL和ID，然后按顺序配对
-        const urlRegex = /loadBannerDirect\s*\(\s*'(https?:\/\/[^']+)'/g;
-        const idRegex = /#post-card-(\d+)/g;
+        console.log("[extractAllCovers] 方法1未匹配，尝试方法2");
         
-        const urls = [];
-        const ids = [];
+        // 匹配所有 loadBannerDirect 调用块
+        const blockRegex = /loadBannerDirect\s*\([^;]+;/g;
+        let blockMatch;
         
-        while ((match = urlRegex.exec(html)) !== null) {
-            if (match[1] && match[1].includes('pic.')) {
-                urls.push(match[1]);
+        while ((blockMatch = blockRegex.exec(html)) !== null) {
+            const block = blockMatch[0];
+            
+            // 从块中提取URL
+            const urlMatch = block.match(/'(https?:\/\/pic\.[^']+)'/);
+            // 从块中提取ID
+            const idMatch = block.match(/#post-card-(\d+)/);
+            
+            if (urlMatch && idMatch) {
+                coverMap[idMatch[1]] = urlMatch[1];
             }
         }
+    }
+    
+    // 方法3: 最宽松的匹配 - 直接找所有pic域名图片和post-card ID的配对
+    if (Object.keys(coverMap).length === 0) {
+        console.log("[extractAllCovers] 方法2未匹配，尝试方法3");
         
-        while ((match = idRegex.exec(html)) !== null) {
-            if (match[1] && !ids.includes(match[1])) {
-                ids.push(match[1]);
+        // 找所有包含 loadBannerDirect 和 pic. 的行
+        const lines = html.split('\n');
+        for (const line of lines) {
+            if (line.includes('loadBannerDirect') && line.includes('pic.')) {
+                const urlMatch = line.match(/'(https?:\/\/pic\.[^']+)'/);
+                const idMatch = line.match(/#post-card-(\d+)/);
+                if (urlMatch && idMatch) {
+                    coverMap[idMatch[1]] = urlMatch[1];
+                }
             }
-        }
-        
-        console.log(`[extractAllCovers] 备用方法: 找到 ${urls.length} 个URL, ${ids.length} 个ID`);
-        
-        // 按顺序配对（假设顺序一致）
-        for (let i = 0; i < Math.min(urls.length, ids.length); i++) {
-            coverMap[ids[i]] = urls[i];
         }
     }
     
     console.log(`[extractAllCovers] 总共提取到 ${Object.keys(coverMap).length} 个封面`);
+    
+    // 输出前3个作为示例
+    const keys = Object.keys(coverMap).slice(0, 3);
+    keys.forEach(k => console.log(`  示例: ID=${k}, URL=${coverMap[k].substring(0, 50)}...`));
+    
     return coverMap;
 }
 
