@@ -195,97 +195,72 @@ function extractVideoInfoById($, element, videoId) {
                   $article.find("a[href*='/archives/']").text().trim() ||
                   "未知标题";
     
-    // 提取封面图 - 改进逻辑
+    // 提取封面图 - 从 loadBannerDirect 脚本中提取
     let coverUrl = "";
     
-    // 方法1: 从 .post-card 的 style 属性获取 background-image
-    const postCard = $article.find(".post-card").first();
-    if (postCard.length) {
-        const style = postCard.attr("style") || "";
-        if (style) {
-            coverUrl = extractBackgroundImageUrl(style);
+    // 方法1: 从 script 标签中提取 loadBannerDirect 的第一个参数（封面URL）
+    // 匹配: loadBannerDirect('URL', '', document.querySelector('#post-card-101201'), ...)
+    const scriptContent = $article.find("script").text() || "";
+    const postCardId = `post-card-${videoId}`;
+    
+    // 正则匹配 loadBannerDirect('封面URL', ...)
+    const bannerMatch = scriptContent.match(/loadBannerDirect\s*\(\s*['"]([^'"]+)['"]/);
+    if (bannerMatch && bannerMatch[1]) {
+        coverUrl = bannerMatch[1];
+        console.log(`[extractVideoInfo] 从loadBannerDirect提取封面: ${coverUrl.substring(0, 50)}...`);
+    }
+    
+    // 方法2: 如果方法1失败，尝试匹配包含该post-card-id的loadBannerDirect
+    if (!coverUrl) {
+        const specificBannerMatch = scriptContent.match(new RegExp(`loadBannerDirect\\s*\\(\\s*['"]([^'"]+)['"][^)]*#${postCardId}`));
+        if (specificBannerMatch && specificBannerMatch[1]) {
+            coverUrl = specificBannerMatch[1];
         }
     }
     
-    // 方法2: 从 .blog-background 的 style 属性获取
+    // 方法3: 从 pic.hqcwcib.cn 域名提取图片URL
     if (!coverUrl) {
-        const blogBg = $article.find(".blog-background").first();
-        if (blogBg.length) {
-            const style = blogBg.attr("style") || "";
+        const picMatch = scriptContent.match(/https?:\/\/pic\.hqcwcib\.cn\/[^'")\s]+/);
+        if (picMatch && picMatch[0]) {
+            coverUrl = picMatch[0];
+        }
+    }
+    
+    // 方法4: 从任意图片域名提取
+    if (!coverUrl) {
+        const imgMatch = scriptContent.match(/https?:\/\/[^'")\s]+\.(?:jpg|jpeg|png|webp|gif)/i);
+        if (imgMatch && imgMatch[0]) {
+            coverUrl = imgMatch[0];
+        }
+    }
+    
+    // 方法5: 从 .post-card 的 style 属性获取 background-image（备用）
+    if (!coverUrl) {
+        const postCard = $article.find(".post-card").first();
+        if (postCard.length) {
+            const style = postCard.attr("style") || "";
             if (style) {
                 coverUrl = extractBackgroundImageUrl(style);
             }
         }
     }
     
-    // 方法3: 从任意带有 background-image 的元素获取
-    if (!coverUrl) {
-        $article.find("[style*='background']").each(function() {
-            if (!coverUrl) {
-                const style = $(this).attr("style") || "";
-                const url = extractBackgroundImageUrl(style);
-                if (url && !url.startsWith("data:")) {
-                    coverUrl = url;
-                }
-            }
-        });
-    }
-    
-    // 方法4: 从 data-src 或 data-original 属性获取（懒加载图片）
-    if (!coverUrl) {
-        const lazyImg = $article.find("[data-src], [data-original]").first();
-        if (lazyImg.length) {
-            coverUrl = ensureAbsoluteUrl(
-                lazyImg.attr("data-src") || 
-                lazyImg.attr("data-original") || 
-                ""
-            );
-        }
-    }
-    
-    // 方法5: 从 img 标签获取
+    // 方法6: 从 img 标签获取（备用）
     if (!coverUrl) {
         const img = $article.find("img").first();
         if (img.length) {
             coverUrl = ensureAbsoluteUrl(
                 img.attr("data-src") || 
                 img.attr("data-original") || 
-                img.attr("data-lazy-src") ||
                 img.attr("src") || 
                 ""
             );
         }
     }
     
-    // 方法6: 从文章内容中查找第一张图片
-    if (!coverUrl) {
-        const contentImg = $article.find(".post-content img, .content img, .entry img").first();
-        if (contentImg.length) {
-            coverUrl = ensureAbsoluteUrl(
-                contentImg.attr("data-src") || 
-                contentImg.attr("src") || 
-                ""
-            );
-        }
-    }
-    
-    // 过滤掉无效的封面（base64占位图或空图）
-    if (coverUrl && (coverUrl.length < 50 || coverUrl.includes("data:image/gif") || coverUrl.includes("placeholder"))) {
-        // 可能是占位图，尝试其他方法
-        const allStyles = [];
-        $article.find("*").each(function() {
-            const s = $(this).attr("style");
-            if (s && s.includes("url(")) {
-                allStyles.push(s);
-            }
-        });
-        for (const s of allStyles) {
-            const url = extractBackgroundImageUrl(s);
-            if (url && url.startsWith("http") && !url.includes("placeholder")) {
-                coverUrl = url;
-                break;
-            }
-        }
+    // 确保URL是完整的
+    if (coverUrl && !coverUrl.startsWith("http") && !coverUrl.startsWith("data:")) {
+        coverUrl = ensureAbsoluteUrl(coverUrl);
     }
     
     // 提取作者
@@ -307,7 +282,7 @@ function extractVideoInfoById($, element, videoId) {
     if (author) description += `作者：${author}`;
     if (tags) description += (description ? " | " : "") + tags;
     
-    console.log(`[extractVideoInfo] ID: ${videoId}, 封面: ${coverUrl ? coverUrl.substring(0, 50) + '...' : '无'}`);
+    console.log(`[extractVideoInfo] ID: ${videoId}, 封面: ${coverUrl ? coverUrl.substring(0, 60) + '...' : '无'}`);
     
     return {
         id: videoId,
