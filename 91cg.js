@@ -63,7 +63,7 @@ WidgetMetadata = {
             functionName: "getCategoryVideos",
             cacheDuration: 600,
             params: [
-                { name: "category", title: "分类", type: "constant", value: "lpsd" },
+                { name: "category", title: "分类", type: "constant", value: "l
                 { name: "page", title: "页码", type: "page", value: "1" }
             ]
         },
@@ -238,10 +238,25 @@ WidgetMetadata = {
 // ==================== 配置 ====================
 const BASE_URL = "https://91cg1.com";
 const HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/137.0.0.0 Safari/537.36",
-    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
     "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
-    "Referer": BASE_URL + "/"
+    "Accept-Encoding": "gzip, deflate, br",
+    "Connection": "keep-alive",
+    "Upgrade-Insecure-Requests": "1",
+    "Sec-Fetch-Dest": "document",
+    "Sec-Fetch-Mode": "navigate",
+    "Sec-Fetch-Site": "none",
+    "Sec-Fetch-User": "?1",
+    "Cache-Control": "max-age=0"
+};
+
+// HTTP 请求配置
+const REQUEST_CONFIG = {
+    headers: HEADERS,
+    timeout: 15000, // 15秒超时
+    followRedirect: true,
+    maxRedirects: 5
 };
 
 // ==================== 工具函数 ====================
@@ -432,12 +447,20 @@ async function getLatestVideos(params = {}) {
     
     console.log(`[getLatestVideos] URL: ${url}`);
     
-    const response = await Widget.http.get(url, { headers: HEADERS });
-    if (!response || !response.data) throw new Error("页面加载失败");
-    
-    const result = parseVideoList(response.data);
-    console.log(`[getLatestVideos] 解析到 ${result.length} 个视频`);
-    return result;
+    try {
+        const response = await Widget.http.get(url, REQUEST_CONFIG);
+        if (!response || !response.data) {
+            console.error("[getLatestVideos] 响应为空");
+            throw new Error("页面加载失败");
+        }
+        
+        const result = parseVideoList(response.data);
+        console.log(`[getLatestVideos] 解析到 ${result.length} 个视频`);
+        return result;
+    } catch (error) {
+        console.error(`[getLatestVideos] 错误: ${error.message}`);
+        throw new Error(`加载失败: ${error.message}`);
+    }
 }
 
 async function getCategoryVideos(params = {}) {
@@ -448,12 +471,20 @@ async function getCategoryVideos(params = {}) {
     
     console.log(`[getCategoryVideos] URL: ${url}`);
     
-    const response = await Widget.http.get(url, { headers: HEADERS });
-    if (!response || !response.data) throw new Error("页面加载失败");
-    
-    const result = parseVideoList(response.data);
-    console.log(`[getCategoryVideos] 解析到 ${result.length} 个视频`);
-    return result;
+    try {
+        const response = await Widget.http.get(url, REQUEST_CONFIG);
+        if (!response || !response.data) {
+            console.error("[getCategoryVideos] 响应为空");
+            throw new Error("页面加载失败");
+        }
+        
+        const result = parseVideoList(response.data);
+        console.log(`[getCategoryVideos] 解析到 ${result.length} 个视频`);
+        return result;
+    } catch (error) {
+        console.error(`[getCategoryVideos] 错误: ${error.message}`);
+        throw new Error(`加载失败: ${error.message}`);
+    }
 }
 
 function extractVideoUrl(html) {
@@ -490,31 +521,45 @@ async function loadDetail(link) {
     const idMatch = link.match(/\/archives\/(\d+)/);
     const videoId = idMatch ? idMatch[1] : link;
     
-    const response = await Widget.http.get(fullUrl, { headers: HEADERS });
-    if (!response || !response.data) throw new Error("详情页加载失败");
-    
-    const videoData = extractVideoUrl(response.data);
-    if (!videoData || !videoData.videoUrl) throw new Error("无法获取视频链接");
-    
-    let videoUrl = videoData.videoUrl;
-    if (!videoUrl.startsWith("http")) videoUrl = ensureAbsoluteUrl(videoUrl);
-    
-    const $ = Widget.html.load(response.data);
-    const title = $("h1.post-title").text().trim() || $("title").text().trim() || "视频播放";
-    
-    // 尝试提取封面图片
-    const coverUrl = extractCoverFromDetail(response.data);
-    
-    return {
-        id: videoId,
-        type: "detail",
-        mediaType: "movie",
-        title: title,
-        coverUrl: coverUrl,
-        videoUrl: videoUrl,
-        customHeaders: { "Referer": fullUrl, "User-Agent": HEADERS["User-Agent"] },
-        childItems: []
-    };
+    try {
+        const response = await Widget.http.get(fullUrl, REQUEST_CONFIG);
+        if (!response || !response.data) {
+            console.error("[loadDetail] 响应为空");
+            throw new Error("详情页加载失败");
+        }
+        
+        const videoData = extractVideoUrl(response.data);
+        if (!videoData || !videoData.videoUrl) {
+            console.error("[loadDetail] 未找到视频URL");
+            throw new Error("无法获取视频链接");
+        }
+        
+        let videoUrl = videoData.videoUrl;
+        if (!videoUrl.startsWith("http")) videoUrl = ensureAbsoluteUrl(videoUrl);
+        
+        const $ = Widget.html.load(response.data);
+        const title = $("h1.post-title").text().trim() || $("title").text().trim() || "视频播放";
+        
+        const coverUrl = extractCoverFromDetail(response.data);
+        
+        return {
+            id: videoId,
+            type: "detail",
+            mediaType: "movie",
+            title: title,
+            coverUrl: coverUrl,
+            videoUrl: videoUrl,
+            customHeaders: { 
+                "Referer": fullUrl, 
+                "User-Agent": HEADERS["User-Agent"],
+                "Origin": BASE_URL
+            },
+            childItems: []
+        };
+    } catch (error) {
+        console.error(`[loadDetail] 错误: ${error.message}`);
+        throw new Error(`加载详情失败: ${error.message}`);
+    }
 }
 
 module.exports = {
