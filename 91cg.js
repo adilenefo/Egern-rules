@@ -1,7 +1,7 @@
-WidgetMetadata = {
+var WidgetMetadata = {
     id: "91CG",
     title: "91瓜叔",
-    version: "1.0.6",
+    version: "1.0.8",
     requiredVersion: "0.0.1",
     description: "91瓜叔 - 在线吃瓜",
     author: "Forward",
@@ -14,6 +14,186 @@ WidgetMetadata = {
             functionName: "getLatestVideos",
             cacheDuration: 300,
             params: [
+                { name: "page", title: "页码", type: "page", value: "1" }
+            ]
+        },
+        {
+            id: "todayMelons",
+            title: "🍉 今日吃瓜",
+            functionName: "getCategoryVideos",
+            cacheDuration: 300,
+            params: [
+                { name: "category", title: "分类", type: "constant", value: "zxcghl" },
+                { name: "page", title: "页码", type: "page", value: "1" }
+            ]
+        },
+        {
+            id: "hotVideos",
+            title: "🔥 最高点击",
+            functionName: "getCategoryVideos",
+            cacheDuration: 600,
+            params: [
+                { name: "category", title: "分类", type: "constant", value: "rsdg" },
+                { name: "page", title: "页码", type: "page", value: "1" }
+            ]
+        },
+        {
+            id: "mustWatch",
+            title: "⭐ 必吃大瓜",
+            functionName: "getCategoryVideos",
+            cacheDuration: 600,
+            params: [
+                { name: "category", title: "分类", type: "constant", value: "bcdg" },
+                { name: "page", title: "页码", type: "page", value: "1" }
+            ]
+        },
+        {
+            id: "teacher",
+            title: "👩‍🏫 师生专栏",
+            functionName: "getCategoryVideos",
+            cacheDuration: 600,
+            params: [
+                { name: "category", title: "分类", type: "constant", value: "xsjlb" },
+                { name: "page", title: "页码", type: "page", value: "1" }
+            ]
+        },
+        {
+            id: "nightVideos",
+            title: "🌙 深夜撸片",
+            functionName: "getCategoryVideos",
+            cacheDuration: 600,
+            params: [
+                { name: "category", title: "分类", type: "constant", value: "lpsd" },
+                { name: "page", title: "页码", type: "page", value: "1" }
+            ]
+        },
+        {
+            id: "haijiao",
+            title: "🔞 海角乱伦",
+            functionName: "getCategoryVideos",
+            cacheDuration: 600,
+            params: [
+                { name: "category", title: "分类", type: "constant", value: "hjll" },
+                { name: "page", title: "页码", type: "page", value: "1" }
+            ]
+        },
+        {
+            id: "dailyContest",
+            title: "🏆 每日大赛",
+            functionName: "getCategoryVideos",
+            cacheDuration: 600,
+            params: [
+                { name: "category", title: "分类", type: "constant", value: "mrds" },
+                { name: "page", title: "页码", type: "page", value: "1" }
+            ]
+        },
+        {
+            id: "wanghong",
+            title: "💋 网红黑料",
+            functionName: "getCategoryVideos",
+            cacheDuration: 600,
+            params: [
+                { name: "category", title: "分类", type: "constant", value: "whhl" },
+                { name: "page", title: "页码", type: "page", value: "1" }
+            ]
+        },
+        {
+            id: "anime",
+            title: "🎌 成人动漫",
+            functionName: "getCategoryVideos",
+            cacheDuration: 600,
+            params: [
+                { name: "category", title: "分类", type: "constant", value: "crdm" },
+                { name: "page", title: "页码", type: "page", value: "1" }
+            ]
+        },
+        {
+            id: "starScandal",
+            title: "🌟 明星黑料",
+            functionName: "getCategoryVideos",
+            cacheDuration: 600,
+            params: [
+                { name: "category", title: "分类", type: "constant", value: "mxhl" },
+                { name: "page", title: "页码", type: "page", value: "1" }
+            ]
+        },
+        {
+            id: "selfie",
+            title: "📷 自拍偷拍",
+            functionName: "getCategoryVideos",
+            cacheDuration: 600,
+            params: [
+                { name: "category", title: "分类", type: "constant", value: "zptp" },
+                { name: "page", title: "页码", type: "page", value: "1" }
+            ]
+        },
+        {
+            id: "tanhua",
+            title: "🌸 91探花",
+            functionName: "getCategoryVideos",
+            cacheDuration: 600,
+            params: [
+                { name: "category", title: "分类", type: "constant", value: "91th" },
+                { name: "page", title: "页码", type: "page", value: "1" }
+            ]
+        },
+        {
+            id: "extreme",
+            title: "⚠️ 猎奇重口",
+            functionName: "getCategoryVideos",
+            cacheDuration: 600,
+            params: [
+                { name: "category", title: "分类", type: "constant", value: "lqzk" },
+                { name: "page", title: "页码", type: "page", value: "1" }
+            ]
+        },
+        {
+            id: "starAI",
+            title: "🤖 明星AI",
+            functionName: "getCategoryVideos",
+            cacheDuration: 600,
+            params: [
+                { name: "category", title: "分类", type: "constant", value: "aikj" },
+                { name: "page", title: "页码", type: "page", value: "1" }
+            ]
+        },
+        {
+            id: "socialNews",
+            title: "📰 社会奇闻",
+            functionName: "getCategoryVideos",
+            cacheDuration: 600,
+            params: [
+                { name: "category", title: "分类", type: "constant", value: "qwys" },
+                { name: "page", title: "页码", type: "page", value: "1" }
+            ]
+        },
+        {
+            id: "contrast",
+            title: "💃 反差靓女",
+            functionName: "getCategoryVideos",
+            cacheDuration: 600,
+            params: [
+                { name: "category", title: "分类", type: "constant", value: "fclv" },
+                { name: "page", title: "页码", type: "page", value: "1" }
+            ]
+        },
+        {
+            id: "shortDrama",
+            title: "🎬 擦边短剧",
+            functionName: "getCategoryVideos",
+            cacheDuration: 600,
+            params: [
+                { name: "category", title: "分类", type: "constant", value: "dydj" },
+                { name: "page", title: "页码", type: "page", value: "1" }
+            ]
+        },
+        {
+            id: "wanghuang",
+            title: "🎀 网黄合集",
+            functionName: "getCategoryVideos",
+            cacheDuration: 600,
+            params: [
+                { name: "category", title: "分类", type: "constant", value: "gcwh" },
                 { name: "page", title: "页码", type: "page", value: "1" }
             ]
         },
@@ -79,20 +259,13 @@ function parseVideoList(html) {
     const $ = Widget.html.load(html);
     const result = [];
     
-    console.log("[parseVideoList] 开始解析HTML，长度: " + html.length);
-    
     // 尝试多种选择器
     let articles = $("article[itemscope]");
-    console.log("[parseVideoList] article[itemscope] 数量: " + articles.length);
-    
     if (articles.length === 0) {
         articles = $("article");
-        console.log("[parseVideoList] article 数量: " + articles.length);
     }
-    
     if (articles.length === 0) {
         articles = $(".post-card, .video-item, .item");
-        console.log("[parseVideoList] .post-card 数量: " + articles.length);
     }
     
     // 尝试从脚本提取封面映射
@@ -104,12 +277,10 @@ function parseVideoList(html) {
             coverMap[scriptMatch[2]] = scriptMatch[1];
         }
     }
-    console.log("[parseVideoList] 封面映射数量: " + Object.keys(coverMap).length);
     
     articles.each(function() {
         const $article = $(this);
         
-        // 尝试多种方式获取链接
         let linkEl = $article.find("a[href*='/archives/']").first();
         if (!linkEl.length) {
             linkEl = $article.find("a[href*='archives']").first();
@@ -121,15 +292,11 @@ function parseVideoList(html) {
         let link = linkEl.attr("href") || "";
         const idMatch = link.match(/\/archives\/(\d+)/) || link.match(/archives\/(\d+)/);
         
-        if (!idMatch) {
-            console.log("[parseVideoList] 跳过无效链接: " + link);
-            return;
-        }
+        if (!idMatch) return;
         
         const videoId = idMatch[1];
         link = ensureAbsoluteUrl(link);
         
-        // 尝试多种方式获取标题
         let title = $article.find("h2 a").text().trim() ||
                     $article.find("h2").text().trim() ||
                     $article.find(".post-card-title").text().trim() ||
@@ -156,15 +323,15 @@ function parseVideoList(html) {
         result.push({
             id: videoId,
             type: "link",
-            mediaType: "movie",
             title: title,
-            coverUrl: coverUrl,
+            mediaType: "movie",
+            posterPath: coverUrl,
+            backdropPath: coverUrl,
             link: link,
             description: tags || ""
         });
     });
     
-    console.log("[parseVideoList] 解析完成，视频数量: " + result.length);
     return result;
 }
 
@@ -301,8 +468,6 @@ async function loadDetail(link) {
     const idMatch = link.match(/\/archives\/(\d+)/);
     const videoId = idMatch ? idMatch[1] : link;
     
-    console.log("[loadDetail] 请求URL: " + fullUrl);
-    
     try {
         const response = await Widget.http.get(fullUrl, { headers: HEADERS });
         
@@ -327,16 +492,21 @@ async function loadDetail(link) {
         
         return {
             id: videoId,
-            type: "detail",
-            mediaType: "movie",
+            type: "url",
             title: title,
-            coverUrl: coverUrl,
+            mediaType: "movie",
+            posterPath: coverUrl,
+            backdropPath: coverUrl,
             videoUrl: videoUrl,
-            customHeaders: { "Referer": fullUrl, "User-Agent": HEADERS["User-Agent"] },
+            link: fullUrl,
+            customHeaders: { 
+                "Referer": fullUrl, 
+                "User-Agent": HEADERS["User-Agent"] 
+            },
             childItems: []
         };
     } catch (error) {
-        console.log("[loadDetail] 错误: " + error.message);
+        console.error("[loadDetail] 错误: " + error.message);
         throw error;
     }
 }
