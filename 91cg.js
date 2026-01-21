@@ -297,13 +297,48 @@ function parseVideoList(html) {
         const videoId = idMatch[1];
         link = ensureAbsoluteUrl(link);
         
-        let title = $article.find("h2 a").text().trim() ||
-                    $article.find("h2").text().trim() ||
-                    $article.find(".post-card-title").text().trim() ||
-                    $article.find(".title").text().trim() ||
-                    linkEl.attr("title") ||
-                    linkEl.text().trim() ||
-                    "未知标题";
+        // 修复标题提取：先移除 script 标签，再获取文本
+        let title = "";
+        
+        // 方法1: 从 h2 > a 的 title 属性获取
+        const h2Link = $article.find("h2 a");
+        if (h2Link.length && h2Link.attr("title")) {
+            title = h2Link.attr("title").trim();
+        }
+        
+        // 方法2: 克隆 h2 元素，移除脚本后获取文本
+        if (!title || title.includes("loadBanner")) {
+            const $h2 = $article.find("h2").first().clone();
+            $h2.find("script").remove();
+            title = $h2.text().trim();
+        }
+        
+        // 方法3: 从 .post-card-title 获取
+        if (!title || title.includes("loadBanner")) {
+            const $titleEl = $article.find(".post-card-title").first().clone();
+            $titleEl.find("script").remove();
+            title = $titleEl.text().trim();
+        }
+        
+        // 方法4: 从链接的 title 属性获取
+        if (!title || title.includes("loadBanner")) {
+            title = linkEl.attr("title") || "";
+        }
+        
+        // 方法5: 从链接文本获取（排除脚本内容）
+        if (!title || title.includes("loadBanner")) {
+            const $linkClone = linkEl.clone();
+            $linkClone.find("script").remove();
+            title = $linkClone.text().trim();
+        }
+        
+        // 最终清理：如果标题还包含脚本内容，截取有效部分或设为默认
+        if (!title || title.includes("loadBanner") || title.includes("decryptImage")) {
+            title = "未知标题";
+        }
+        
+        // 清理标题中的多余空白
+        title = title.replace(/\s+/g, ' ').trim();
         
         // 获取封面
         let coverUrl = coverMap[videoId] || "";
