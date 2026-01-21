@@ -63,7 +63,7 @@ WidgetMetadata = {
             functionName: "getCategoryVideos",
             cacheDuration: 600,
             params: [
-                { name: "category", title: "分类", type: "constant", value: "l
+                { name: "category", title: "分类", type: "constant", value: "lpsd" },
                 { name: "page", title: "页码", type: "page", value: "1" }
             ]
         },
